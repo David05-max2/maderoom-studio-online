@@ -45,13 +45,14 @@
         function resolveLocal(fromPath, specifier) {
           const from = new URL(fromPath, 'https://maderoom.local/')
           const resolved = new URL(specifier, from)
-          let path = resolved.pathname.replace(/^\//, '')
+          const path = resolved.pathname.replace(/^\//, '')
           const candidates = [path, path + '.ts', path + '.tsx', path + '/index.ts', path + '/index.tsx']
           return candidates.find(c => order.includes(c)) || path
         }
 
         function rewriteImports(code, currentPath) {
           return code.replace(/(from\s*["']|import\s*["'])([^"']+)(["'])/g, function (_, prefix, specifier, suffix) {
+            if (specifier.endsWith('.css')) return '/* stylesheet loaded by index.html */'
             if (externals[specifier]) return prefix + externals[specifier] + suffix
             if (specifier.startsWith('.')) {
               const resolved = resolveLocal(currentPath, specifier)
