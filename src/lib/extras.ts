@@ -85,6 +85,12 @@ export async function getLatestOptimizerRuns(projectId: string) {
   return data ?? []
 }
 
+export async function syncBudgetFromProject(projectId: string) {
+  const { data, error } = await client().rpc('sync_budget_from_project', { target_project: projectId })
+  if (error) throw error
+  return data
+}
+
 export async function getCompanyLicense(companyId: string) {
   const { data, error } = await client()
     .from('licenses')
