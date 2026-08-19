@@ -16,6 +16,12 @@
     <div id="root"></div>
     <div id="boot-status"><div id="boot-card"><h1>Maderoom Studio Online</h1><p id="boot-message">Cargando aplicación…</p><div id="boot-error"></div></div></div>
 
+    <script>
+      globalThis.__MADEROOM_CONFIG__ = {
+        SUPABASE_URL: 'https://uvuqzpannpujnqiwfjiu.supabase.co',
+        SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_UP3i7rK2_50FFI9Um2fhAQ_aUmSYiBB'
+      }
+    </script>
     <script src="https://unpkg.com/@babel/standalone@7.25.6/babel.min.js"></script>
     <script>
       (async function () {
@@ -23,6 +29,7 @@
         const status = document.getElementById('boot-status')
         const message = document.getElementById('boot-message')
         const errorBox = document.getElementById('boot-error')
+        let currentModule = 'inicio'
         const externals = {
           'react': 'https://esm.sh/react@18.3.1',
           'react-dom/client': 'https://esm.sh/react-dom@18.3.1/client',
@@ -66,6 +73,7 @@
         try {
           if (!window.Babel) throw new Error('No se pudo cargar el compilador del navegador.')
           for (const path of order) {
+            currentModule = path
             message.textContent = 'Preparando ' + path.replace('src/', '') + '…'
             const response = await fetch(base + path + '?v=' + Date.now(), { cache: 'no-store' })
             if (!response.ok) throw new Error('No se pudo cargar ' + path + ' (' + response.status + ')')
@@ -81,6 +89,7 @@
             const rewritten = rewriteImports(transformed, path)
             urls[path] = URL.createObjectURL(new Blob([rewritten], { type: 'text/javascript' }))
           }
+          currentModule = 'src/main.tsx'
           message.textContent = 'Iniciando…'
           await import(urls['src/main.tsx'])
           status.remove()
@@ -88,7 +97,8 @@
           console.error(error)
           message.textContent = 'No se pudo iniciar la aplicación.'
           errorBox.style.display = 'block'
-          errorBox.textContent = String(error && error.stack ? error.stack : error)
+          const detail = error && (error.message || error.stack) ? (error.message || error.stack) : String(error)
+          errorBox.textContent = 'Módulo: ' + currentModule + '\n\n' + detail
         }
       })()
     </script>
