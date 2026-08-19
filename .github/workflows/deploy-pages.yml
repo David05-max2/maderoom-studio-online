@@ -1,4 +1,4 @@
-name: Deploy Maderoom Studio Online
+name: Build Maderoom Studio Online
 
 on:
   push:
@@ -6,16 +6,14 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
-  group: pages
+  group: maderoom-pages-build
   cancel-in-progress: true
 
 jobs:
-  build:
+  build-and-publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -24,7 +22,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 20
 
       - name: Install dependencies
         run: npm install
@@ -35,39 +33,18 @@ jobs:
           VITE_SUPABASE_URL: https://uvuqzpannpujnqiwfjiu.supabase.co
           VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_UP3i7rK2_50FFI9Um2fhAQ_aUmSYiBB
 
-      - name: Inspect production bundle
+      - name: Validate bundle
         run: |
-          echo '--- dist files ---'
-          find dist -maxdepth 2 -type f -print
+          test -f dist/index.html
           echo '--- dist/index.html ---'
           cat dist/index.html
-          test -f dist/index.html
+          echo '--- files ---'
+          find dist -maxdepth 2 -type f -print
 
-      - name: Force Pages source to GitHub Actions
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh api --method PUT \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            /repos/${{ github.repository }}/pages \
-            -f build_type=workflow
-
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload production artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Publish compiled site to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: ./dist
-
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Deploy production artifact
-        id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          publish_branch: gh-pages
+          force_orphan: true
