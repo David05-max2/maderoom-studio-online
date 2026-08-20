@@ -2,10 +2,9 @@ import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 
 /**
- * Temporary source guard for a React effect in ProjectsPage.
- * The original effect passed an async-returning loader directly to useEffect,
- * so React treated the returned Promise as a cleanup function and crashed
- * when the Projects screen unmounted after opening a project.
+ * Build-time safety patch for React effects that accidentally return Promises.
+ * In ProjectsPage, passing load directly to useEffect makes React treat the
+ * Promise returned by load() as a cleanup function when leaving the screen.
  */
 function fixPromiseEffectCleanup(): Plugin {
   return {
@@ -14,15 +13,10 @@ function fixPromiseEffectCleanup(): Plugin {
     transform(code, id) {
       if (!id.replace(/\\/g, '/').endsWith('/src/App.tsx')) return null
 
-      const broken = 'useEffect(load, [company.id])'
-      const fixed = 'useEffect(() => { void load() }, [company.id])'
+      let next = code
+      next = next.split('useEffect(load, [company.id])').join('useEffect(() => { void load() }, [company.id])')
 
-      if (!code.includes(broken)) return null
-
-      return {
-        code: code.replace(broken, fixed),
-        map: null,
-      }
+      return next === code ? null : { code: next, map: null }
     },
   }
 }
@@ -30,4 +24,7 @@ function fixPromiseEffectCleanup(): Plugin {
 export default defineConfig({
   plugins: [fixPromiseEffectCleanup(), react()],
   base: '/maderoom-studio-online/',
+  build: {
+    sourcemap: true,
+  },
 })
