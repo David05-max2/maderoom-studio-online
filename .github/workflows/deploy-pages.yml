@@ -1,3 +1,4 @@
+# redeploy stable 3bcd7f9 via GitHub Pages Actions
 name: Deploy Maderoom Studio Online
 
 on:
